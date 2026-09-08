@@ -1,0 +1,238 @@
+{
+    "queries": [
+        {
+            "query": "CPU 使用率过高怎么排查？",
+            "relevant_ids": [
+                "5c8a9a03-21a8-4123-b687-09d6b99a6bf2",
+                "7e8752e6-a238-4c29-bd7e-bff3440aa23f",
+                "e3934eaf-dbe5-40f6-b2f8-8f9eb1bc2910"
+            ],
+            "relevance_scores": {
+                "5c8a9a03-21a8-4123-b687-09d6b99a6bf2": 2,
+                "7e8752e6-a238-4c29-bd7e-bff3440aa23f": 2,
+                "e3934eaf-dbe5-40f6-b2f8-8f9eb1bc2910": 2
+            }
+        },
+        {
+            "query": "内存占用过高，怎么定位问题？",
+            "relevant_ids": [
+                "138c1f19-cdeb-43a4-8b33-bf1a5f9472ec",
+                "22fa0b42-52ab-42cb-bf01-6ac0b8a7e45a",
+                "2abcd465-544e-4c9f-99f2-2531f658e551",
+                "9446b9b5-a70f-46cb-9c33-270a2b0797e3"
+            ],
+            "relevance_scores": {
+                "138c1f19-cdeb-43a4-8b33-bf1a5f9472ec": 2,
+                "22fa0b42-52ab-42cb-bf01-6ac0b8a7e45a": 2,
+                "2abcd465-544e-4c9f-99f2-2531f658e551": 2,
+                "9446b9b5-a70f-46cb-9c33-270a2b0797e3": 2
+            }
+        },
+        {
+            "query": "磁盘空间满了如何处理？",
+            "relevant_ids": [
+                "11546f90-3da5-430e-8444-5998e176667c",
+                "13f037f7-9590-4f99-8bae-a4aab1e8d26e",
+                "1b0f7205-9efc-473a-9113-f4b878763e08",
+                "6250d3ff-52da-4e4b-9d03-1941208f2266",
+                "759a6959-f9ee-4272-9dc5-b147c7bccc1e",
+                "de33ae59-a0e0-4054-92d0-22ceb7825b34"
+            ],
+            "relevance_scores": {
+                "11546f90-3da5-430e-8444-5998e176667c": 2,
+                "13f037f7-9590-4f99-8bae-a4aab1e8d26e": 2,
+                "1b0f7205-9efc-473a-9113-f4b878763e08": 2,
+                "6250d3ff-52da-4e4b-9d03-1941208f2266": 2,
+                "759a6959-f9ee-4272-9dc5-b147c7bccc1e": 2,
+                "de33ae59-a0e0-4054-92d0-22ceb7825b34": 2
+            }
+        },
+        {
+            "query": "服务响应变慢了，可能有哪些原因？",
+            "relevant_ids": [
+                "3e916047-f404-471a-9a07-267cbc95231a",
+                "84a71190-817c-43cf-b72c-439cd3c61e5e",
+                "e96dfc50-37a8-491e-b2e9-b7310fc039be",
+                "ec883f2c-aee2-410d-84ca-ff4a28347d5d"
+            ],
+            "relevance_scores": {
+                "3e916047-f404-471a-9a07-267cbc95231a": 2,
+                "84a71190-817c-43cf-b72c-439cd3c61e5e": 2,
+                "e96dfc50-37a8-491e-b2e9-b7310fc039be": 2,
+                "ec883f2c-aee2-410d-84ca-ff4a28347d5d": 2
+            }
+        },
+        {
+            "query": "服务不可用，如何快速恢复？",
+            "relevant_ids": [
+                "4988cc6a-5a66-486c-b0e6-0e56abf0efa3",
+                "88974794-9d2d-468a-989d-209779356721",
+                "91e9b812-3918-427c-a80e-78c74770bc66",
+                "9b5021aa-c7f4-4439-856d-f061112f0d3b"
+            ],
+            "relevance_scores": {
+                "4988cc6a-5a66-486c-b0e6-0e56abf0efa3": 2,
+                "88974794-9d2d-468a-989d-209779356721": 2,
+                "91e9b812-3918-427c-a80e-78c74770bc66": 2,
+                "9b5021aa-c7f4-4439-856d-f061112f0d3b": 2
+            }
+        },
+        {
+            "query": "网络延迟过高怎么排查？",
+            "relevant_ids": [
+                "7eb05ec9-ed13-465e-8e5e-3413986f475c",
+                "b1ecf702-70c2-4752-b416-9fda6421a7ce",
+                "eaa6993b-dd56-4449-a8c6-5889c692f929"
+            ],
+            "relevance_scores": {
+                "7eb05ec9-ed13-465e-8e5e-3413986f475c": 2,
+                "b1ecf702-70c2-4752-b416-9fda6421a7ce": 2,
+                "eaa6993b-dd56-4449-a8c6-5889c692f929": 2
+            }
+        },
+        {
+            "query": "数据库死锁如何解决？",
+            "relevant_ids": [
+                "cb54086b-ec94-4f79-ac7f-b65a8145e4cf"
+            ],
+            "relevance_scores": {
+                "cb54086b-ec94-4f79-ac7f-b65a8145e4cf": 2
+            }
+        },
+        {
+            "query": "Pod 被驱逐怎么恢复？",
+            "relevant_ids": [
+                "c96af8df-acd0-473c-a481-fd4b91d02fc9"
+            ],
+            "relevance_scores": {
+                "c96af8df-acd0-473c-a481-fd4b91d02fc9": 2
+            }
+        },
+        {
+            "query": "TLS 证书即将过期怎么办？",
+            "relevant_ids": [
+                "00e8e1bc-2cb3-4b97-9a6d-2903136fd54a"
+            ],
+            "relevance_scores": {
+                "00e8e1bc-2cb3-4b97-9a6d-2903136fd54a": 2
+            }
+        },
+        {
+            "query": "Nginx 5xx 错误率过高如何处理？",
+            "relevant_ids": [
+                "07621acc-91f1-404f-aa1c-7ed1b4de4428"
+            ],
+            "relevance_scores": {
+                "07621acc-91f1-404f-aa1c-7ed1b4de4428": 2
+            }
+        },
+        {
+            "query": "Redis 连接失败怎么处理？",
+            "relevant_ids": [
+                "8d3290ba-d18b-4786-b93d-8e31809cc7e0",
+                "bc264ded-f2ca-469a-ad48-cf5c3370d412"
+            ],
+            "relevance_scores": {
+                "8d3290ba-d18b-4786-b93d-8e31809cc7e0": 2,
+                "bc264ded-f2ca-469a-ad48-cf5c3370d412": 2
+            }
+        },
+        {
+            "query": "MySQL 连接池耗尽怎么处理？",
+            "relevant_ids": [
+                "d239ef7a-d4cd-4dc5-817e-d6ead01af704",
+                "e16e28a5-f840-4e8e-9ede-2987885296e9"
+            ],
+            "relevance_scores": {
+                "d239ef7a-d4cd-4dc5-817e-d6ead01af704": 2,
+                "e16e28a5-f840-4e8e-9ede-2987885296e9": 2
+            }
+        },
+        {
+            "query": "Kafka 消费延迟怎么处理？",
+            "relevant_ids": [
+                "bd213725-b66a-43bf-bd39-0ba14444ddd8",
+                "c2641948-dfd2-4173-b57f-d8ba57dfaaf0"
+            ],
+            "relevance_scores": {
+                "bd213725-b66a-43bf-bd39-0ba14444ddd8": 2,
+                "c2641948-dfd2-4173-b57f-d8ba57dfaaf0": 2
+            }
+        },
+        {
+            "query": "Elasticsearch 集群 Red 状态怎么处理？",
+            "relevant_ids": [
+                "4d986445-69c2-4808-a03c-8662379d42e4",
+                "e0abbd0a-1799-4ce4-8446-f9730b6c39f9"
+            ],
+            "relevance_scores": {
+                "4d986445-69c2-4808-a03c-8662379d42e4": 2,
+                "e0abbd0a-1799-4ce4-8446-f9730b6c39f9": 2
+            }
+        },
+        {
+            "query": "API 网关超时怎么处理？",
+            "relevant_ids": [
+                "067d21a0-f89f-45ab-9357-c1f9c6636f6d",
+                "2803f3a1-3ac0-434f-bfa5-58a4cbbebd72"
+            ],
+            "relevance_scores": {
+                "067d21a0-f89f-45ab-9357-c1f9c6636f6d": 2,
+                "2803f3a1-3ac0-434f-bfa5-58a4cbbebd72": 2
+            }
+        },
+        {
+            "query": "CDN 回源失败怎么处理？",
+            "relevant_ids": [
+                "c8fb6caa-a17e-4ab9-8ea6-d3af56c645d8",
+                "f2066745-5ae0-42b6-bfe8-a383e0299d4a"
+            ],
+            "relevance_scores": {
+                "c8fb6caa-a17e-4ab9-8ea6-d3af56c645d8": 2,
+                "f2066745-5ae0-42b6-bfe8-a383e0299d4a": 2
+            }
+        },
+        {
+            "query": "DNS 解析失败怎么处理？",
+            "relevant_ids": [
+                "75dbc4b0-969c-4f04-afe2-48317ca2f84d",
+                "f5955bd8-1f76-46c4-bd35-792a6bb2fe9b"
+            ],
+            "relevance_scores": {
+                "75dbc4b0-969c-4f04-afe2-48317ca2f84d": 2,
+                "f5955bd8-1f76-46c4-bd35-792a6bb2fe9b": 2
+            }
+        },
+        {
+            "query": "安全组配置错误怎么处理？",
+            "relevant_ids": [
+                "0a3e9763-e151-4f2e-9323-14f68ef06e35",
+                "91c70d00-74c8-4ce0-aa2d-0d77a05a36c5"
+            ],
+            "relevance_scores": {
+                "0a3e9763-e151-4f2e-9323-14f68ef06e35": 2,
+                "91c70d00-74c8-4ce0-aa2d-0d77a05a36c5": 2
+            }
+        },
+        {
+            "query": "负载均衡健康检查失败怎么处理？",
+            "relevant_ids": [
+                "d9f1d6c8-d357-4fd3-afc7-e75174403e9d",
+                "f57c3c5c-d6f0-4c99-887d-6fb2d7c930a7"
+            ],
+            "relevance_scores": {
+                "d9f1d6c8-d357-4fd3-afc7-e75174403e9d": 2,
+                "f57c3c5c-d6f0-4c99-887d-6fb2d7c930a7": 2
+            }
+        },
+        {
+            "query": "配置变更需要回滚怎么处理？",
+            "relevant_ids": [
+                "f5dc2ceb-b4de-4480-8a69-4b0d220d0ca9"
+            ],
+            "relevance_scores": {
+                "f5dc2ceb-b4de-4480-8a69-4b0d220d0ca9": 2
+            }
+        }
+    ]
+}

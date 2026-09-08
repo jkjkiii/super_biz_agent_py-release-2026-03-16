@@ -1,0 +1,116 @@
+  第 1 步：看懂"工具"怎么定义（最简单）
+
+  读这三个文件：
+  - app/tools/time_tool.py — 30 行，看 @tool 装饰器怎么把一个普通函数变成 LLM 可调用的工具
+  - app/tools/knowledge_tool.py — 看工具怎么调用向量库检索
+  - app/tools/__init__.py
+
+  ▎ 收获：理解「工具 = 函数 + 描述」，LLM 是靠函数的 docstring 来理解工具用途的。
+
+  第 2 步：看懂 RAG Agent（简单 Agent）
+
+  读 app/services/rag_agent_service.py
+
+  重点看两行：
+  self.agent = create_agent(self.model, tools=all_tools, checkpointer=self.checkpointer)
+  ...
+  result = await self.agent.ainvoke(input=agent_input, config=config_dict)
+
+  这是 LangGraph 官方封装的开箱即用 Agent，LLM 自己循环「要不要调工具 → 调工具 → 看结果 →
+  继续」。这个模式最接近你听说的"ReAct Agent"。
+
+  ▎ 收获：理解最简单的 Agent 是怎么跑起来的，以及 thread_id 是怎么做会话隔离的。
+
+  第 3 步：看懂 AIOps Agent 的状态机（重点，最值得学）
+
+  这是项目里最有教学价值的部分，按这个顺序读：
+
+  1. app/agent/aiops/state.py — 先看懂「状态」长什么样（past_steps 用 operator.add 实现追加，是个细节亮点）
+  2. app/services/aiops_service.py 的 _build_graph()（第 29-79 行）— 看三个节点怎么连成一个图
+  3. app/agent/aiops/planner.py — 看怎么用 with_structured_output 让 LLM 输出固定 JSON 格式的计划
+  4. app/agent/aiops/executor.py — 看怎么调工具
+  5. app/agent/aiops/replanner.py — 看怎么让 LLM 决策"继续/重规划/结束"
+
+  ▎ 收获：这是 Plan-Execute-Replan 模式的完整实现，是比简单 ReAct 更高级的 Agent 架构。核心思想是：让 LLM
+  ▎ 先列计划，再一步步执行，每步之后重新评估。
+
+  第 4 步：理解 MCP（工具协议）
+
+  读 app/agent/mcp_client.py 和 mcp_servers/README.md
+
+  MCP 是"工具的标准协议"，让 Agent 能调用另一个进程/服务提供的工具。注意看 MultiServerMCPClient 怎么把远程的
+  CLS（日志）、Monitor（监控）服务变成工具列表。
+
+  ▎ 收获：理解「本地工具」和「MCP 远程工具」的区别，这是 2024 年后 Agent 生态最重要的协议。
+
+  第 5 步：理解 RAG（可选，涉及向量库）
+
+  读 app/services/ 下的 document_splitter_service.py、vector_embedding_service.py、vector_search_service.py，配合
+  aiops-docs/ 里的 Markdown。
+
+  ▎ 收获：理解「文档 → 切块 → 向量化 → 检索 → 喂给 LLM」的完整链路。
+
+  四、建议你动手做的 3 个练习
+
+  光读不够，改代码才能真正理解：
+
+  1. 加一个自己的工具：在 app/tools/ 里加一个 weather_tool.py（模拟返回天气），然后在 rag_agent_service.py 里把它加进
+  self.tools，看 Agent 会不会自动调用它。这是理解 Tool 机制最快的方式。
+  2. 改 Planner 的提示词：把 planner_prompt 里的 system 提示词改成"计划不要超过 3 步"，跑一下 AIOps
+  诊断，看生成的计划有什么变化。这会让你直观理解「提示词工程」对 Agent 行为的影响。
+  3. 追踪一次完整执行：启动服务后调用 /api/aiops，然后读 logs/ 里的日志文件。日志里每一步（Planner → Executor →
+  Replanner）都有清晰的 === 分隔标记，跟着日志走一遍状态流转，比读代码更直观。
+
+
+
+
+ 台阶 1：工具 Tool —— 解决"LLM 只会编，不会查"
+
+  问题：LLM 本质上只会"输入文本 → 输出文本"。你问它"现在几点"，它只会瞎编。怎么办？
+
+  答案：把函数的能力"告诉" LLM，让它输出"我想调用 get_current_time"，由程序去执行，再把结果喂回给它。
+
+  - 读：app/tools/time_tool.py（30 行，就一个 @tool 装饰器）
+  - 掌握：@tool 靠函数的 docstring 让 LLM 理解工具用途
+  - 验收：能回答「LLM 是怎么"知道"有哪些工具可用的？」
+
+  台阶 2：循环（ReAct Agent）—— 解决"查一次可能不够"
+
+  问题：复杂任务里，LLM 往往要「查时间 → 看结果 → 再查知识库 → 再思考 → 回答」，是多轮循环。谁来循环？
+
+  答案：create_agent 帮你写好了这个循环——"LLM 决策 → 调工具 → 看结果 → 再决策，直到 LLM 决定不调工具为止"。
+
+  - 读：app/services/rag_agent_service.py（重点看 _initialize_agent 和 query）
+  - 掌握：create_agent(model, tools, checkpointer) 一行就得到了一个循环 Agent
+  - 验收：能回答「thread_id 是干什么用的？」
+
+  台阶 3：状态机（Plan-Execute-Replan）—— 解决"完全交给 LLM 会失控"
+
+  问题：台阶 2 里，LLM 自己决定一切，容易乱跑、低效、不可控。能不能人为地把流程固定下来？
+
+  答案：把任务拆成「规划 → 执行 → 评估」三个节点，用图（StateGraph）连起来。LLM
+  只在每个节点内部做决策，流程走向由代码控制。
+
+  - 读（按顺序）：state.py → aiops_service.py 的 _build_graph() → planner.py → executor.py → replanner.py
+  - 掌握：State（数据）、Node（函数）、Edge（流转）三者怎么组成一张图
+  - 验收：能画出「planner → executor ⇄ replanner」这张图，并说出 should_continue 在做什么
+
+  台阶 4：MCP —— 解决"工具只在本地，想调外部服务"
+
+  问题：前面的工具都是本项目写死的。如果想让 Agent 调用另一个进程（日志服务、监控服务）提供的工具呢？
+
+  答案：MCP 是"工具的标准协议"，MultiServerMCPClient 把远程服务暴露的工具，统一成和本地工具一样的东西。
+
+  - 读：app/agent/mcp_client.py + mcp_servers/README.md
+  - 掌握：本地工具 vs MCP 远程工具的区别；拦截器（重试）是干嘛的
+  - 验收：能回答「MCP 工具是怎么变成 bind_tools 能用的工具列表的？」
+
+  台阶 5：RAG —— 解决"LLM 没有专业知识"
+
+  问题：LLM 不懂你公司内部的运维文档。怎么让它"读过"这些文档？
+
+  答案：文档 → 切块 → 向量化 → 存进 Milvus → 提问时检索最相关的几块 → 喂给 LLM。
+
+  - 读：document_splitter_service.py → vector_search_service.py → knowledge_tool.py
+  - 掌握：完整链路，以及 _file_name 这类元数据在哪写入、在哪读取（你上一条问的就是这个）
+  - 验收：能讲清「retrieve_knowledge 这个工具，内部到底做了什么」
