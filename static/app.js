@@ -8,7 +8,7 @@ class SuperBizAgentApp {
         this.currentChatHistory = []; // 当前对话的消息历史
         this.chatHistories = this.loadChatHistories(); // 所有历史对话
         this.isCurrentChatFromHistory = false; // 标记当前对话是否是从历史记录加载的
-        
+
         this.initializeElements();
         this.bindEvents();
         this.updateUI();
@@ -34,7 +34,7 @@ class SuperBizAgentApp {
                     // 配置代码高亮
                     if (typeof hljs !== 'undefined') {
                         marked.setOptions({
-                            highlight: function(code, lang) {
+                            highlight: function (code, lang) {
                                 if (lang && hljs.getLanguage(lang)) {
                                     try {
                                         return hljs.highlight(code, { language: lang }).value;
@@ -61,13 +61,13 @@ class SuperBizAgentApp {
     // 安全地渲染 Markdown
     renderMarkdown(content) {
         if (!content) return '';
-        
+
         // 检查 marked 是否可用
         if (typeof marked === 'undefined') {
             console.warn('marked 库未加载，使用纯文本显示');
             return this.escapeHtml(content);
         }
-        
+
         try {
             const html = marked.parse(content);
             return html;
@@ -98,7 +98,7 @@ class SuperBizAgentApp {
         this.sidebar = document.querySelector('.sidebar');
         this.newChatBtn = document.getElementById('newChatBtn');
         this.aiOpsSidebarBtn = document.getElementById('aiOpsSidebarBtn');
-        
+
         // 输入区域元素
         this.messageInput = document.getElementById('messageInput');
         this.sendButton = document.getElementById('sendButton');
@@ -109,14 +109,14 @@ class SuperBizAgentApp {
         this.modeDropdown = document.getElementById('modeDropdown');
         this.currentModeText = document.getElementById('currentModeText');
         this.fileInput = document.getElementById('fileInput');
-        
+
         // 聊天区域元素
         this.chatMessages = document.getElementById('chatMessages');
         this.loadingOverlay = document.getElementById('loadingOverlay');
         this.chatContainer = document.querySelector('.chat-container');
         this.welcomeGreeting = document.getElementById('welcomeGreeting');
         this.chatHistoryList = document.getElementById('chatHistoryList');
-        
+
         // 初始化时检查是否需要居中
         this.checkAndSetCentered();
     }
@@ -127,12 +127,12 @@ class SuperBizAgentApp {
         if (this.newChatBtn) {
             this.newChatBtn.addEventListener('click', () => this.newChat());
         }
-        
+
         // AI Ops按钮
         if (this.aiOpsSidebarBtn) {
             this.aiOpsSidebarBtn.addEventListener('click', () => this.triggerAIOps());
         }
-        
+
         // 模式选择下拉菜单
         if (this.modeSelectorBtn) {
             this.modeSelectorBtn.addEventListener('click', (e) => {
@@ -140,7 +140,7 @@ class SuperBizAgentApp {
                 this.toggleModeDropdown();
             });
         }
-        
+
         // 下拉菜单项点击
         const dropdownItems = document.querySelectorAll('.dropdown-item');
         dropdownItems.forEach(item => {
@@ -150,20 +150,20 @@ class SuperBizAgentApp {
                 this.closeModeDropdown();
             });
         });
-        
+
         // 点击外部关闭下拉菜单
         document.addEventListener('click', (e) => {
-            if (!this.modeSelectorBtn.contains(e.target) && 
+            if (!this.modeSelectorBtn.contains(e.target) &&
                 !this.modeDropdown.contains(e.target)) {
                 this.closeModeDropdown();
             }
         });
-        
+
         // 发送消息
         if (this.sendButton) {
             this.sendButton.addEventListener('click', () => this.sendMessage());
         }
-        
+
         if (this.messageInput) {
             this.messageInput.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter' && !e.shiftKey) {
@@ -172,7 +172,7 @@ class SuperBizAgentApp {
                 }
             });
         }
-        
+
         // 工具按钮和菜单
         if (this.toolsBtn) {
             this.toolsBtn.addEventListener('click', (e) => {
@@ -180,7 +180,7 @@ class SuperBizAgentApp {
                 this.toggleToolsMenu();
             });
         }
-        
+
         // 工具菜单项点击事件
         if (this.uploadFileItem) {
             this.uploadFileItem.addEventListener('click', () => {
@@ -190,16 +190,16 @@ class SuperBizAgentApp {
                 this.closeToolsMenu();
             });
         }
-        
+
         // 点击外部关闭工具菜单
         document.addEventListener('click', (e) => {
-            if (this.toolsBtn && this.toolsMenu && 
-                !this.toolsBtn.contains(e.target) && 
+            if (this.toolsBtn && this.toolsMenu &&
+                !this.toolsBtn.contains(e.target) &&
                 !this.toolsMenu.contains(e.target)) {
                 this.closeToolsMenu();
             }
         });
-        
+
         if (this.fileInput) {
             this.fileInput.addEventListener('change', (e) => this.handleFileSelect(e));
         }
@@ -231,7 +231,7 @@ class SuperBizAgentApp {
             this.showNotification('请等待当前对话完成后再新建对话', 'warning');
             return;
         }
-        
+
         // 如果当前有对话内容，且不是从历史记录加载的，才保存为新的历史对话
         // 如果是从历史记录加载的，只需要更新该历史记录
         if (this.currentChatHistory.length > 0) {
@@ -243,51 +243,51 @@ class SuperBizAgentApp {
                 this.saveCurrentChat();
             }
         }
-        
+
         // 停止所有进行中的操作
         this.isStreaming = false;
-        
+
         // 清空输入框
         if (this.messageInput) {
             this.messageInput.value = '';
         }
-        
+
         // 清空当前对话历史
         this.currentChatHistory = [];
-        
+
         // 重置标记
         this.isCurrentChatFromHistory = false;
-        
+
         // 清空聊天记录
         if (this.chatMessages) {
             this.chatMessages.innerHTML = '';
         }
-        
+
         // 生成新的会话ID
         this.sessionId = this.generateSessionId();
-        
+
         // 重置模式为快速
         this.currentMode = 'quick';
         this.updateUI();
-        
+
         // 重新设置居中样式（确保对话框居中显示）
         this.checkAndSetCentered();
-        
+
         // 确保容器有过渡动画
         if (this.chatContainer) {
             this.chatContainer.style.transition = 'all 0.5s ease';
         }
-        
+
         // 更新历史对话列表
         this.renderChatHistory();
     }
-    
+
     // 保存当前对话到历史记录（新建）
     saveCurrentChat() {
         if (this.currentChatHistory.length === 0) {
             return;
         }
-        
+
         // 检查是否已存在相同ID的历史记录
         const existingIndex = this.chatHistories.findIndex(h => h.id === this.sessionId);
         if (existingIndex !== -1) {
@@ -295,13 +295,13 @@ class SuperBizAgentApp {
             this.updateCurrentChatHistory();
             return;
         }
-        
+
         // 获取对话标题（使用第一条用户消息的前30个字符）
         const firstUserMessage = this.currentChatHistory.find(msg => msg.type === 'user');
-        const title = firstUserMessage ? 
-            (firstUserMessage.content.substring(0, 30) + (firstUserMessage.content.length > 30 ? '...' : '')) : 
+        const title = firstUserMessage ?
+            (firstUserMessage.content.substring(0, 30) + (firstUserMessage.content.length > 30 ? '...' : '')) :
             '新对话';
-        
+
         const chatHistory = {
             id: this.sessionId,
             title: title,
@@ -309,37 +309,37 @@ class SuperBizAgentApp {
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString()
         };
-        
+
         // 添加到历史记录列表的开头
         this.chatHistories.unshift(chatHistory);
-        
+
         // 限制历史记录数量（最多保存50条）
         if (this.chatHistories.length > 50) {
             this.chatHistories = this.chatHistories.slice(0, 50);
         }
-        
+
         // 保存到localStorage
         this.saveChatHistories();
     }
-    
+
     // 更新当前对话的历史记录
     updateCurrentChatHistory() {
         if (this.currentChatHistory.length === 0) {
             return;
         }
-        
+
         const existingIndex = this.chatHistories.findIndex(h => h.id === this.sessionId);
         if (existingIndex === -1) {
             // 如果不存在，调用保存方法
             this.saveCurrentChat();
             return;
         }
-        
+
         // 更新现有的历史记录
         const history = this.chatHistories[existingIndex];
         history.messages = [...this.currentChatHistory];
         history.updatedAt = new Date().toISOString();
-        
+
         // 如果标题需要更新（第一条消息改变了）
         const firstUserMessage = this.currentChatHistory.find(msg => msg.type === 'user');
         if (firstUserMessage) {
@@ -348,11 +348,11 @@ class SuperBizAgentApp {
                 history.title = newTitle;
             }
         }
-        
+
         // 保存到localStorage
         this.saveChatHistories();
     }
-    
+
     // 加载历史对话列表
     loadChatHistories() {
         try {
@@ -363,7 +363,7 @@ class SuperBizAgentApp {
             return [];
         }
     }
-    
+
     // 保存历史对话列表到localStorage
     saveChatHistories() {
         try {
@@ -372,24 +372,24 @@ class SuperBizAgentApp {
             console.error('保存历史对话失败:', e);
         }
     }
-    
+
     // 渲染历史对话列表
     renderChatHistory() {
         if (!this.chatHistoryList) {
             return;
         }
-        
+
         this.chatHistoryList.innerHTML = '';
-        
+
         if (this.chatHistories.length === 0) {
             return;
         }
-        
+
         this.chatHistories.forEach((history, index) => {
             const historyItem = document.createElement('div');
             historyItem.className = 'history-item';
             historyItem.dataset.historyId = history.id;
-            
+
             historyItem.innerHTML = `
                 <div class="history-item-content">
                     <span class="history-item-title">${this.escapeHtml(history.title)}</span>
@@ -400,32 +400,32 @@ class SuperBizAgentApp {
                     </svg>
                 </button>
             `;
-            
+
             // 点击历史项加载对话
             historyItem.addEventListener('click', (e) => {
                 if (!e.target.closest('.history-item-delete')) {
                     this.loadChatHistory(history.id);
                 }
             });
-            
+
             // 删除历史对话
             const deleteBtn = historyItem.querySelector('.history-item-delete');
             deleteBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 this.deleteChatHistory(history.id);
             });
-            
+
             this.chatHistoryList.appendChild(historyItem);
         });
     }
-    
+
     // 加载历史对话
     async loadChatHistory(historyId) {
         const history = this.chatHistories.find(h => h.id === historyId);
         if (!history) {
             return;
         }
-        
+
         // 如果当前有对话内容，且不是同一个对话，先保存
         if (this.currentChatHistory.length > 0 && this.sessionId !== historyId) {
             if (this.isCurrentChatFromHistory) {
@@ -436,22 +436,22 @@ class SuperBizAgentApp {
                 this.saveCurrentChat();
             }
         }
-        
+
         try {
             // 从后端获取会话历史
             const response = await fetch(`/api/chat/session/${historyId}`);
             if (response.ok) {
                 const data = await response.json();
                 const backendHistory = data.history || [];
-                
+
                 // 更新会话ID
                 this.sessionId = history.id;
                 this.isCurrentChatFromHistory = true;
-                
+
                 // 清空并重新渲染消息
                 if (this.chatMessages) {
                     this.chatMessages.innerHTML = '';
-                    
+
                     // 如果后端有历史记录，使用后端的
                     if (backendHistory.length > 0) {
                         this.currentChatHistory = [];
@@ -474,7 +474,7 @@ class SuperBizAgentApp {
                 this.sessionId = history.id;
                 this.currentChatHistory = [...history.messages];
                 this.isCurrentChatFromHistory = true;
-                
+
                 if (this.chatMessages) {
                     this.chatMessages.innerHTML = '';
                     history.messages.forEach(msg => {
@@ -488,7 +488,7 @@ class SuperBizAgentApp {
             this.sessionId = history.id;
             this.currentChatHistory = [...history.messages];
             this.isCurrentChatFromHistory = true;
-            
+
             if (this.chatMessages) {
                 this.chatMessages.innerHTML = '';
                 history.messages.forEach(msg => {
@@ -496,12 +496,12 @@ class SuperBizAgentApp {
                 });
             }
         }
-        
+
         // 更新UI
         this.checkAndSetCentered();
         this.renderChatHistory();
     }
-    
+
     // 删除历史对话
     async deleteChatHistory(historyId) {
         try {
@@ -521,13 +521,13 @@ class SuperBizAgentApp {
             }
 
             const result = await response.json();
-            
+
             if (result.status === 'success') {
                 // 从本地存储中删除
                 this.chatHistories = this.chatHistories.filter(h => h.id !== historyId);
                 this.saveChatHistories();
                 this.renderChatHistory();
-                
+
                 // 如果删除的是当前对话，清空当前对话
                 if (this.sessionId === historyId) {
                     this.currentChatHistory = [];
@@ -537,7 +537,7 @@ class SuperBizAgentApp {
                     this.sessionId = this.generateSessionId();
                     this.checkAndSetCentered();
                 }
-                
+
                 this.showNotification('会话已清空', 'success');
             } else {
                 throw new Error(result.message || '清空会话失败');
@@ -574,15 +574,15 @@ class SuperBizAgentApp {
             this.showNotification('请等待当前对话完成后再切换模式', 'warning');
             return;
         }
-        
+
         this.currentMode = mode;
         this.updateUI();
-        
+
         const modeNames = {
             'quick': '快速',
             'stream': '流式'
         };
-        
+
         this.showNotification(`已切换到${modeNames[mode]}模式`, 'info');
     }
 
@@ -596,7 +596,7 @@ class SuperBizAgentApp {
             };
             this.currentModeText.textContent = modeNames[this.currentMode] || '快速';
         }
-        
+
         // 更新下拉菜单选中状态
         const dropdownItems = document.querySelectorAll('.dropdown-item');
         dropdownItems.forEach(item => {
@@ -607,12 +607,12 @@ class SuperBizAgentApp {
                 item.classList.remove('active');
             }
         });
-        
+
         // 更新发送按钮状态
         if (this.sendButton) {
             this.sendButton.disabled = this.isStreaming;
         }
-        
+
         // 更新输入框状态
         if (this.messageInput) {
             this.messageInput.disabled = this.isStreaming;
@@ -625,13 +625,16 @@ class SuperBizAgentApp {
         return 'session_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
     }
 
+    // ============================================================
     // 发送消息
+    // ============================================================
+
     async sendMessage() {
         let message = '';
         if (this.messageInput) {
             message = this.messageInput.value.trim();
         }
-        
+
         if (!message) {
             this.showNotification('请输入消息内容', 'warning');
             return;
@@ -644,7 +647,7 @@ class SuperBizAgentApp {
 
         // 显示用户消息
         this.addMessage('user', message);
-        
+
         // 清空输入框
         if (this.messageInput) {
             this.messageInput.value = '';
@@ -655,9 +658,12 @@ class SuperBizAgentApp {
         this.updateUI();
 
         try {
+            // 两种模式分开：
+            // 「快速」= 非流式 /chat（转圈等待 → 一次性完整答案）
+            // 「流式」= SSE /chat_stream（过程日志打进气泡 + 逐字正文）
             if (this.currentMode === 'quick') {
                 await this.sendQuickMessage(message);
-            } else if (this.currentMode === 'stream') {
+            } else {
                 await this.sendStreamMessage(message);
             }
         } catch (error) {
@@ -666,20 +672,21 @@ class SuperBizAgentApp {
         } finally {
             this.isStreaming = false;
             this.updateUI();
-            
+
             // 如果当前对话是从历史记录加载的，更新历史记录
             if (this.isCurrentChatFromHistory && this.currentChatHistory.length > 0) {
                 this.updateCurrentChatHistory();
-                this.renderChatHistory(); // 更新历史对话列表显示
+                this.renderChatHistory();
             }
         }
     }
 
-    // 发送快速消息（普通对话）
+    // 发送快速消息（普通对话）：走非流式 /chat
+    // 转圈等待 → 一次性返回完整答案，不显示过程日志
     async sendQuickMessage(message) {
         // 添加等待提示消息
         const loadingMessage = this.addLoadingMessage('正在思考...');
-        
+
         try {
             const response = await fetch(`${this.apiBaseUrl}/chat`, {
                 method: 'POST',
@@ -697,18 +704,17 @@ class SuperBizAgentApp {
             }
 
             const data = await response.json();
-            console.log('[sendQuickMessage] 响应数据:', JSON.stringify(data));
-            
+
             // 移除等待提示消息
             if (loadingMessage && loadingMessage.parentNode) {
                 loadingMessage.parentNode.removeChild(loadingMessage);
             }
-            
+
             // 统一响应格式：检查 data.code 或 data.message 判断请求是否成功
             if (data.code === 200 || data.message === 'success') {
                 // data.data 是 ChatResponse 对象
                 const chatResponse = data.data;
-                
+
                 if (chatResponse && chatResponse.success) {
                     // 成功：添加实际响应消息（即使 answer 为空也显示）
                     const answer = chatResponse.answer || '（无回复内容）';
@@ -734,146 +740,190 @@ class SuperBizAgentApp {
         }
     }
 
-    // 发送流式消息
+    // ============================================================
+    // 🆕 发送流式消息：仅供「流式」模式使用
+    // 过程日志（正在排查/调用工具）打进回复气泡，正文接在下方
+    // ============================================================
+
     async sendStreamMessage(message) {
-        try {
-            const response = await fetch(`${this.apiBaseUrl}/chat_stream`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    Id: this.sessionId,
-                    Question: message
-                })
-            });
+        // 助手气泡在收到正文前，会先把"过程日志"（正在排查/调用工具…）打进同一气泡里，
+        // 正文开始时接在日志下方、日志保留 —— 这样最终一条消息里既有过程又有答案。
+        let fullResponse = '';
 
-            if (!response.ok) {
-                throw new Error(`HTTP错误: ${response.status}`);
+        const response = await fetch(`${this.apiBaseUrl}/chat_stream`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                Id: this.sessionId,
+                Question: message
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP错误: ${response.status}`);
+        }
+
+        // 创建助手气泡，内部结构：暂态占位 → 过程日志区 → 正文区
+        const assistantMessageElement = this.addMessage('assistant', '', true);
+        const messageContent = assistantMessageElement.querySelector('.message-content');
+        messageContent.innerHTML = '';
+
+        const pendingDiv = document.createElement('div');
+        pendingDiv.className = 'pending-status';
+        pendingDiv.textContent = '⏳ 正在思考...';
+
+        const logDiv = document.createElement('div');
+        logDiv.className = 'process-log';
+
+        const answerDiv = document.createElement('div');
+        answerDiv.className = 'answer-content';
+
+        messageContent.appendChild(pendingDiv);
+        messageContent.appendChild(logDiv);
+        messageContent.appendChild(answerDiv);
+
+        // 首个事件到达后移除"正在思考"占位
+        const removePending = () => {
+            if (pendingDiv.parentNode) {
+                pendingDiv.parentNode.removeChild(pendingDiv);
             }
-            
-            // 创建助手消息元素
-            const assistantMessageElement = this.addMessage('assistant', '', true);
-            let fullResponse = '';
+        };
 
-            // 处理流式响应
-            const reader = response.body.getReader();
-            const decoder = new TextDecoder();
-            let buffer = '';
-            let currentEvent = '';
+        // 追加一行过程日志（后端会把同一意图发两次，相邻相同行自动去重）
+        const addProcessLine = (text) => {
+            removePending();
+            const lastLine = logDiv.lastElementChild;
+            if (lastLine && lastLine.textContent === text) {
+                return;
+            }
+            const line = document.createElement('div');
+            line.className = 'process-line';
+            line.textContent = text;
+            logDiv.appendChild(line);
+            this.scrollToBottom();
+        };
 
-            try {
-                while (true) {
-                    const { done, value } = await reader.read();
-                    
-                    if (done) {
-                        // 流结束，使用统一的处理方法
-                        this.handleStreamComplete(assistantMessageElement, fullResponse);
-                        break;
-                    }
+        // 把累积的正文渲染进正文区（过程日志保留在上方不动）
+        const renderAnswer = () => {
+            removePending();
+            answerDiv.innerHTML = this.renderMarkdown(fullResponse);
+            this.highlightCodeBlocks(answerDiv);
+            this.scrollToBottom();
+        };
 
-                    // 解码数据并添加到缓冲区
-                    buffer += decoder.decode(value, { stream: true });
-                    
-                    // 按行分割处理
-                    const lines = buffer.split('\n');
-                    // 保留最后一行（可能不完整）
-                    buffer = lines.pop() || '';
-                    
-                    for (const line of lines) {
-                        if (line.trim() === '') continue;
-                        
-                        console.log('[SSE调试] 收到行:', line);
-                        
-                        // 解析SSE格式
-                        if (line.startsWith('id:')) {
-                            console.log('[SSE调试] 解析到ID');
-                            continue;
-                        } else if (line.startsWith('event:')) {
-                            // 兼容 "event:message" 和 "event: message" 两种格式
-                            currentEvent = line.substring(6).trim();
-                            console.log('[SSE调试] 解析到事件类型:', currentEvent);
-                            // 注意：后端统一使用 "message" 事件名，真正的类型在 data 的 JSON 中
-                            continue;
-                        } else if (line.startsWith('data:')) {
-                            // 兼容 "data:xxx" 和 "data: xxx" 两种格式
-                            const rawData = line.substring(5).trim();
-                            console.log('[SSE调试] 解析到数据, currentEvent:', currentEvent, ', rawData:', rawData);
-                            
-                            // 兼容旧格式 [DONE] 标记
-                            if (rawData === '[DONE]') {
-                                // 流结束标记，将内容转换为Markdown渲染
-                                this.handleStreamComplete(assistantMessageElement, fullResponse);
-                                return;
-                            }
-                            
-                            // 处理 SSE 数据
-                            try {
-                                // 尝试解析为 SseMessage 格式的 JSON
-                                const sseMessage = JSON.parse(rawData);
-                                console.log('[SSE调试] 解析JSON成功:', sseMessage);
-                                
-                                if (sseMessage && typeof sseMessage.type === 'string') {
-                                    if (sseMessage.type === 'content') {
-                                        const content = sseMessage.data || '';
-                                        fullResponse += content;
-                                        console.log('[SSE调试] 添加内容:', content);
-                                        
-                                        // 实时渲染 Markdown
-                                        if (assistantMessageElement) {
-                                            const messageContent = assistantMessageElement.querySelector('.message-content');
-                                            messageContent.innerHTML = this.renderMarkdown(fullResponse);
-                                            // 高亮代码块
-                                            this.highlightCodeBlocks(messageContent);
-                                            this.scrollToBottom();
-                                        }
-                                    } else if (sseMessage.type === 'done') {
-                                        console.log('[SSE调试] 收到done标记，流结束');
-                                        this.handleStreamComplete(assistantMessageElement, fullResponse);
-                                        return;
-                                    } else if (sseMessage.type === 'error') {
-                                        console.error('[SSE调试] 收到错误:', sseMessage.data);
-                                        if (assistantMessageElement) {
-                                            const messageContent = assistantMessageElement.querySelector('.message-content');
-                                            messageContent.innerHTML = this.renderMarkdown('错误: ' + (sseMessage.data || '未知错误'));
-                                        }
-                                        return;
+        // 处理流式响应
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+        let currentEvent = '';
+
+        try {
+            while (true) {
+                const { done, value } = await reader.read();
+
+                if (done) {
+                    // 流结束，收尾（保留日志 + 刷新最终正文）
+                    this.finishStreamMessage(assistantMessageElement, fullResponse);
+                    break;
+                }
+
+                // 解码数据并添加到缓冲区
+                buffer += decoder.decode(value, { stream: true });
+
+                // 按行分割处理
+                const lines = buffer.split('\n');
+                // 保留最后一行（可能不完整）
+                buffer = lines.pop() || '';
+
+                for (const line of lines) {
+                    if (line.trim() === '') continue;
+
+                    // 解析SSE格式
+                    if (line.startsWith('id:')) {
+                        continue;
+                    } else if (line.startsWith('event:')) {
+                        currentEvent = line.substring(6).trim();
+                        continue;
+                    } else if (line.startsWith('data:')) {
+                        const rawData = line.substring(5).trim();
+
+                        if (rawData === '[DONE]') {
+                            this.finishStreamMessage(assistantMessageElement, fullResponse);
+                            return;
+                        }
+
+                        try {
+                            const sseMessage = JSON.parse(rawData);
+
+                            if (sseMessage && typeof sseMessage.type === 'string') {
+
+                                // ========== 1. 意图识别 → 记一行日志（闲聊不加，避免每个回答都带一句） ==========
+                                if (sseMessage.type === 'intent') {
+                                    const intentData = sseMessage.data || {};
+                                    const intent = intentData.intent || 'unknown';
+                                    const intentMap = {
+                                        'troubleshoot': '🔍 正在排查故障...',
+                                        'knowledge': '📚 正在查询知识库...',
+                                        'control': '⚙️ 正在执行操作...'
+                                    };
+                                    if (intentMap[intent]) {
+                                        addProcessLine(intentMap[intent]);
                                     }
-                                } else {
-                                    // 不是标准 SseMessage 格式，尝试兼容处理
-                                    console.log('[SSE调试] 非标准格式，尝试兼容处理');
-                                    fullResponse += rawData;
-                                    if (assistantMessageElement) {
-                                        const messageContent = assistantMessageElement.querySelector('.message-content');
-                                        messageContent.innerHTML = this.renderMarkdown(fullResponse);
-                                        this.highlightCodeBlocks(messageContent);
-                                        this.scrollToBottom();
+                                    console.log(`[意图] ${intent} (置信度: ${intentData.confidence ?? 0})`);
+                                }
+
+                                // ========== 2. 工具调用 start/end → 记一行日志 ==========
+                                else if (sseMessage.type === 'tool_call') {
+                                    const toolData = sseMessage.data || {};
+                                    const toolName = toolData.tool || '未知工具';
+                                    const status = toolData.status || 'start';
+
+                                    if (status === 'start') {
+                                        addProcessLine(`🔧 调用工具: ${toolName} ...`);
+                                        console.log(`[工具调用] 开始: ${toolName}`);
+                                    } else if (status === 'end') {
+                                        addProcessLine(`✅ 工具调用完成: ${toolName}`);
+                                        console.log(`[工具调用] 完成: ${toolName}`);
                                     }
                                 }
-                            } catch (e) {
-                                // JSON 解析失败，尝试兼容旧格式
-                                console.log('[SSE调试] JSON解析失败，使用兼容模式:', e.message);
-                                if (rawData === '') {
-                                    fullResponse += '\n';
-                                } else {
-                                    fullResponse += rawData;
+
+                                // ========== 3. 正文（最终回答）→ 渲染到正文区 ==========
+                                else if (sseMessage.type === 'content') {
+                                    fullResponse += (sseMessage.data || '');
+                                    renderAnswer();
                                 }
-                                
-                                if (assistantMessageElement) {
-                                    const messageContent = assistantMessageElement.querySelector('.message-content');
-                                    messageContent.innerHTML = this.renderMarkdown(fullResponse);
-                                    this.highlightCodeBlocks(messageContent);
-                                    this.scrollToBottom();
+
+                                // ========== 4. 完成 ==========
+                                else if (sseMessage.type === 'done' || sseMessage.type === 'complete') {
+                                    console.log('[SSE] 流完成');
+                                    this.finishStreamMessage(assistantMessageElement, fullResponse);
+                                    return;
                                 }
+
+                                // ========== 5. 错误 → 记入日志并结束 ==========
+                                else if (sseMessage.type === 'error') {
+                                    console.error('[SSE] 错误:', sseMessage.data);
+                                    addProcessLine(`❌ 错误: ${sseMessage.data || '未知错误'}`);
+                                    this.finishStreamMessage(assistantMessageElement, fullResponse);
+                                    return;
+                                }
+                            } else {
+                                // 非标准格式，兼容处理：直接当正文追加
+                                fullResponse += rawData;
+                                renderAnswer();
                             }
+                        } catch (e) {
+                            // JSON 解析失败，兼容旧格式：直接当正文追加
+                            fullResponse += rawData === '' ? '\n' : rawData;
+                            renderAnswer();
                         }
                     }
                 }
-            } finally {
-                reader.releaseLock();
             }
-        } catch (error) {
-            throw error;
+        } finally {
+            reader.releaseLock();
         }
     }
 
@@ -881,7 +931,7 @@ class SuperBizAgentApp {
     addMessage(type, content, isStreaming = false, saveToHistory = true) {
         // 检查是否是第一条消息，如果是则移除居中样式
         const isFirstMessage = this.chatMessages && this.chatMessages.querySelectorAll('.message').length === 0;
-        
+
         // 保存消息到当前对话历史（如果不是流式消息且需要保存）
         if (!isStreaming && saveToHistory && content) {
             this.currentChatHistory.push({
@@ -890,7 +940,7 @@ class SuperBizAgentApp {
                 timestamp: new Date().toISOString()
             });
         }
-        
+
         const messageDiv = document.createElement('div');
         messageDiv.className = `message ${type}${isStreaming ? ' streaming' : ''}`;
 
@@ -912,7 +962,7 @@ class SuperBizAgentApp {
 
         const messageContent = document.createElement('div');
         messageContent.className = 'message-content';
-        
+
         // 如果是assistant消息且不是流式消息，使用Markdown渲染
         if (type === 'assistant' && !isStreaming) {
             messageContent.innerHTML = this.renderMarkdown(content);
@@ -928,14 +978,14 @@ class SuperBizAgentApp {
 
         if (this.chatMessages) {
             this.chatMessages.appendChild(messageDiv);
-            
+
             // 如果是第一条消息，移除居中样式并添加动画
             if (isFirstMessage && this.chatContainer) {
                 this.chatContainer.classList.remove('centered');
                 // 添加动画类
                 this.chatContainer.style.transition = 'all 0.5s ease';
             }
-            
+
             this.scrollToBottom();
         }
 
@@ -963,11 +1013,11 @@ class SuperBizAgentApp {
 
         const messageContent = document.createElement('div');
         messageContent.className = 'message-content loading-message-content';
-        
+
         // 创建文本和动画容器
         const textSpan = document.createElement('span');
         textSpan.textContent = content;
-        
+
         // 创建旋转动画图标
         const loadingIcon = document.createElement('span');
         loadingIcon.className = 'loading-spinner-icon';
@@ -977,7 +1027,7 @@ class SuperBizAgentApp {
                 <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10c1.54 0 3-.36 4.28-1l-1.5-2.6C13.64 19.62 12.84 20 12 20c-4.41 0-8-3.59-8-8s3.59-8 8-8c.84 0 1.64.38 2.18 1l1.5-2.6C13 2.36 12.54 2 12 2z" fill="currentColor"/>
             </svg>
         `;
-        
+
         messageContent.appendChild(textSpan);
         messageContent.appendChild(loadingIcon);
         messageContentWrapper.appendChild(messageContent);
@@ -985,20 +1035,20 @@ class SuperBizAgentApp {
 
         if (this.chatMessages) {
             this.chatMessages.appendChild(messageDiv);
-            
+
             // 如果是第一条消息，移除居中样式
             const isFirstMessage = this.chatMessages.querySelectorAll('.message').length === 1;
             if (isFirstMessage && this.chatContainer) {
                 this.chatContainer.classList.remove('centered');
                 this.chatContainer.style.transition = 'all 0.5s ease';
             }
-            
+
             this.scrollToBottom();
         }
 
         return messageDiv;
     }
-    
+
     // 检查并设置居中样式
     checkAndSetCentered() {
         if (this.chatMessages && this.chatContainer) {
@@ -1018,18 +1068,32 @@ class SuperBizAgentApp {
         }
     }
 
-    // 处理流式传输完成
-    handleStreamComplete(assistantMessageElement, fullResponse) {
+    // 流式传输收尾：正文完整显示后自动收起过程日志，最终气泡只留干净的正文
+    finishStreamMessage(assistantMessageElement, fullResponse) {
         if (assistantMessageElement) {
             assistantMessageElement.classList.remove('streaming');
             const messageContent = assistantMessageElement.querySelector('.message-content');
             if (messageContent) {
-                messageContent.innerHTML = this.renderMarkdown(fullResponse);
-                // 高亮代码块
-                this.highlightCodeBlocks(messageContent);
+                const answerDiv = messageContent.querySelector('.answer-content');
+                if (answerDiv) {
+                    // 刷新最终正文（处理中已实时渲染，这里保证收尾完整）
+                    answerDiv.innerHTML = this.renderMarkdown(fullResponse);
+                    this.highlightCodeBlocks(answerDiv);
+                    // 有正文时收起过程日志：流式过程可见，完成后只留干净正文
+                    if (fullResponse) {
+                        const logDiv = messageContent.querySelector('.process-log');
+                        if (logDiv && logDiv.parentNode) {
+                            logDiv.parentNode.removeChild(logDiv);
+                        }
+                    }
+                } else {
+                    // 兜底：非本结构时整块渲染
+                    messageContent.innerHTML = this.renderMarkdown(fullResponse);
+                    this.highlightCodeBlocks(messageContent);
+                }
             }
         }
-        // 保存流式消息到历史记录
+        // 保存流式消息到历史记录（只存正文，过程日志不落库）
         if (fullResponse) {
             this.currentChatHistory.push({
                 type: 'assistant',
@@ -1198,12 +1262,12 @@ class SuperBizAgentApp {
             const reader = response.body.getReader();
             const decoder = new TextDecoder();
             let buffer = '';
-            let currentEvent = 'message'; // 默认事件类型为 message
+            let currentEvent = 'message';
 
             try {
                 while (true) {
                     const { done, value } = await reader.read();
-                    
+
                     if (done) {
                         // 流结束，更新最终内容
                         if (fullResponse) {
@@ -1215,17 +1279,17 @@ class SuperBizAgentApp {
 
                     // 解码数据并添加到缓冲区
                     buffer += decoder.decode(value, { stream: true });
-                    
+
                     // 按行分割处理
                     const lines = buffer.split('\n');
                     // 保留最后一行（可能不完整）
                     buffer = lines.pop() || '';
-                    
+
                     for (const line of lines) {
                         if (line.trim() === '') continue;
-                        
+
                         console.log('[AI Ops SSE] 收到行:', line);
-                        
+
                         // 解析 SSE 格式
                         if (line.startsWith('id:')) {
                             continue;
@@ -1236,12 +1300,12 @@ class SuperBizAgentApp {
                         } else if (line.startsWith('data:')) {
                             const rawData = line.substring(5).trim();
                             console.log('[AI Ops SSE] 数据:', rawData, ', currentEvent:', currentEvent);
-                            
+
                             // 解析可能包含多个JSON对象的数据
                             const processJsonMessages = (data) => {
                                 const jsonPattern = /\{"type"\s*:\s*"[^"]+"\s*,\s*"data"\s*:\s*(?:"[^"]*"|null)\}/g;
                                 const matches = data.match(jsonPattern);
-                                
+
                                 if (matches && matches.length > 0) {
                                     console.log('[AI Ops SSE] 匹配到', matches.length, '个JSON对象');
                                     for (const jsonStr of matches) {
@@ -1250,24 +1314,19 @@ class SuperBizAgentApp {
                                             if (sseMessage.type === 'content') {
                                                 fullResponse += sseMessage.data || '';
                                             } else if (sseMessage.type === 'plan') {
-                                                // 处理计划创建事件
                                                 const planText = `\n\n## 📋 执行计划\n${sseMessage.message}\n\n`;
                                                 fullResponse += planText;
                                             } else if (sseMessage.type === 'step_complete') {
-                                                // 处理步骤完成事件
                                                 const stepText = `\n✅ ${sseMessage.message}\n`;
                                                 fullResponse += stepText;
                                             } else if (sseMessage.type === 'status') {
-                                                // 处理状态更新事件
                                                 const statusText = `\n⏳ ${sseMessage.message}\n`;
                                                 fullResponse += statusText;
                                             } else if (sseMessage.type === 'report') {
-                                                // 处理最终报告事件 - 流式输出
                                                 console.log('AI Ops 最终报告生成');
                                                 const reportText = `\n\n## 🎯 诊断报告\n\n${sseMessage.report || ''}\n`;
                                                 fullResponse += reportText;
                                             } else if (sseMessage.type === 'complete') {
-                                                // 处理完成事件
                                                 console.log('AI Ops 诊断完成');
                                                 if (sseMessage.response) {
                                                     fullResponse += `\n\n${sseMessage.response}`;
@@ -1293,7 +1352,7 @@ class SuperBizAgentApp {
                                 }
                                 return null;
                             };
-                            
+
                             const result = processJsonMessages(rawData);
                             if (result === true) {
                                 return; // 流结束
@@ -1308,28 +1367,24 @@ class SuperBizAgentApp {
                                                 this.updateAIOpsStreamContent(loadingMessageElement, fullResponse);
                                             }
                                         } else if (sseMessage.type === 'plan') {
-                                            // 处理计划创建事件
                                             const planText = `\n\n## 📋 执行计划\n${sseMessage.message}\n\n`;
                                             fullResponse += planText;
                                             if (loadingMessageElement) {
                                                 this.updateAIOpsStreamContent(loadingMessageElement, fullResponse);
                                             }
                                         } else if (sseMessage.type === 'step_complete') {
-                                            // 处理步骤完成事件
                                             const stepText = `\n✅ ${sseMessage.message}\n`;
                                             fullResponse += stepText;
                                             if (loadingMessageElement) {
                                                 this.updateAIOpsStreamContent(loadingMessageElement, fullResponse);
                                             }
                                         } else if (sseMessage.type === 'status') {
-                                            // 处理状态更新事件
                                             const statusText = `\n⏳ ${sseMessage.message}\n`;
                                             fullResponse += statusText;
                                             if (loadingMessageElement) {
                                                 this.updateAIOpsStreamContent(loadingMessageElement, fullResponse);
                                             }
                                         } else if (sseMessage.type === 'report') {
-                                            // 处理最终报告事件 - 这是关键！
                                             console.log('AI Ops 最终报告生成，流式输出中...');
                                             const reportText = `\n\n## 🎯 诊断报告\n\n${sseMessage.report || ''}\n`;
                                             fullResponse += reportText;
@@ -1337,12 +1392,10 @@ class SuperBizAgentApp {
                                                 this.updateAIOpsStreamContent(loadingMessageElement, fullResponse);
                                             }
                                         } else if (sseMessage.type === 'complete') {
-                                            // 处理完成事件
                                             console.log('AI Ops 诊断完成，最终内容长度:', fullResponse.length);
                                             if (sseMessage.response) {
                                                 fullResponse += `\n\n${sseMessage.response}`;
                                             }
-                                            // 使用最终的完整内容更新消息
                                             this.updateAIOpsMessage(loadingMessageElement, fullResponse, []);
                                             return;
                                         } else if (sseMessage.type === 'done') {
@@ -1381,10 +1434,10 @@ class SuperBizAgentApp {
     // 更新智能运维流式内容（实时显示）
     updateAIOpsStreamContent(messageElement, content) {
         if (!messageElement) return;
-        
+
         // 添加 aiops-message 类
         messageElement.classList.add('aiops-message');
-        
+
         const messageContentWrapper = messageElement.querySelector('.message-content-wrapper');
         if (messageContentWrapper) {
             let messageContent = messageContentWrapper.querySelector('.message-content');
@@ -1406,9 +1459,8 @@ class SuperBizAgentApp {
         console.log('response:', response);
         console.log('response length:', response ? response.length : 0);
         console.log('details:', details);
-        
+
         if (!messageElement) {
-            // 如果没有传入消息元素，则创建新消息
             console.log('messageElement 为空，创建新消息');
             return this.addAIOpsMessage(response, details);
         }
@@ -1433,7 +1485,7 @@ class SuperBizAgentApp {
         // 移除加载动画相关的类和内容
         messageContent.classList.remove('loading-message-content');
         messageContent.textContent = '';
-        
+
         // 移除加载图标（如果存在）
         const loadingIcon = messageContent.querySelector('.loading-spinner-icon');
         if (loadingIcon) {
@@ -1464,7 +1516,7 @@ class SuperBizAgentApp {
 
             const detailsContent = document.createElement('div');
             detailsContent.className = 'details-content';
-            
+
             details.forEach((detail, index) => {
                 const detailItem = document.createElement('div');
                 detailItem.className = 'detail-item';
@@ -1491,14 +1543,14 @@ class SuperBizAgentApp {
         // 高亮代码块
         this.highlightCodeBlocks(messageContent);
         console.log('代码块高亮完成');
-        
+
         // 保存到历史记录
         this.currentChatHistory.push({
             type: 'assistant',
             content: response,
             timestamp: new Date().toISOString()
         });
-        
+
         this.scrollToBottom();
         return messageElement;
     }
@@ -1538,7 +1590,7 @@ class SuperBizAgentApp {
 
             const detailsContent = document.createElement('div');
             detailsContent.className = 'details-content';
-            
+
             details.forEach((detail, index) => {
                 const detailItem = document.createElement('div');
                 detailItem.className = 'detail-item';
@@ -1565,7 +1617,7 @@ class SuperBizAgentApp {
         this.highlightCodeBlocks(messageContent);
         messageContentWrapper.appendChild(messageContent);
         messageDiv.appendChild(messageContentWrapper);
-        
+
         if (this.chatMessages) {
             this.chatMessages.appendChild(messageDiv);
             this.scrollToBottom();
@@ -1590,11 +1642,11 @@ class SuperBizAgentApp {
 
         // 新建对话
         this.newChat();
-        
+
         // 添加"分析中..."的消息（带旋转动画）
         const loadingMessage = this.addLoadingMessage('分析中...');
-        this.currentAIOpsMessage = loadingMessage; // 保存消息引用用于后续更新
-        
+        this.currentAIOpsMessage = loadingMessage;
+
         // 设置发送状态
         this.isStreaming = true;
         this.updateUI();
@@ -1603,7 +1655,6 @@ class SuperBizAgentApp {
             await this.sendAIOpsRequest(loadingMessage);
         } catch (error) {
             console.error('智能运维分析失败:', error);
-            // 更新消息为错误信息
             if (loadingMessage) {
                 const messageContent = loadingMessage.querySelector('.message-content');
                 if (messageContent) {
@@ -1622,16 +1673,13 @@ class SuperBizAgentApp {
         if (this.loadingOverlay) {
             if (show) {
                 this.loadingOverlay.style.display = 'flex';
-                // 更新文字为智能运维
                 const loadingText = this.loadingOverlay.querySelector('.loading-text');
                 const loadingSubtext = this.loadingOverlay.querySelector('.loading-subtext');
                 if (loadingText) loadingText.textContent = '智能运维分析中，请稍候...';
                 if (loadingSubtext) loadingSubtext.textContent = '后端正在处理，请耐心等待';
-                // 防止页面滚动
                 document.body.style.overflow = 'hidden';
             } else {
                 this.loadingOverlay.style.display = 'none';
-                // 恢复页面滚动
                 document.body.style.overflow = '';
             }
         }
@@ -1642,16 +1690,13 @@ class SuperBizAgentApp {
         if (this.loadingOverlay) {
             if (show) {
                 this.loadingOverlay.style.display = 'flex';
-                // 更新文字为上传中
                 const loadingText = this.loadingOverlay.querySelector('.loading-text');
                 const loadingSubtext = this.loadingOverlay.querySelector('.loading-subtext');
                 if (loadingText) loadingText.textContent = '正在上传文件...';
                 if (loadingSubtext) loadingSubtext.textContent = fileName ? `上传: ${fileName}` : '请稍候';
-                // 防止页面滚动
                 document.body.style.overflow = 'hidden';
             } else {
                 this.loadingOverlay.style.display = 'none';
-                // 恢复页面滚动
                 document.body.style.overflow = '';
             }
         }
@@ -1671,7 +1716,7 @@ style.textContent = `
             opacity: 1;
         }
     }
-    
+
     @keyframes slideOut {
         from {
             transform: translateX(0);

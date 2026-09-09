@@ -54,6 +54,31 @@ body {
     gap: 8px;
 }
 
+/* ========== 气泡内过程日志（状态提示打进 AI 回复里） ========== */
+.pending-status {
+    color: #5f6368;
+    font-size: 14px;
+    padding: 4px 0;
+}
+
+.process-log {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 8px;
+}
+
+.process-line {
+    color: #5f6368;
+    font-size: 13px;
+    line-height: 1.7;
+    font-family: Consolas, Monaco, "Courier New", monospace;
+    white-space: pre-wrap;
+}
+
+.answer-content {
+    margin-top: 2px;
+}
+
 .new-chat-btn {
     width: 100%;
     padding: 12px;
@@ -432,25 +457,45 @@ body {
 }
 
 /* Markdown渲染样式 */
-.message-content h1, .message-content h2, .message-content h3,
-.message-content h4, .message-content h5, .message-content h6 {
+.message-content h1,
+.message-content h2,
+.message-content h3,
+.message-content h4,
+.message-content h5,
+.message-content h6 {
     margin-top: 16px;
     margin-bottom: 8px;
     font-weight: 600;
     line-height: 1.25;
 }
 
-.message-content h1 { font-size: 1.5em; border-bottom: 1px solid #e8eaed; padding-bottom: 8px; }
-.message-content h2 { font-size: 1.3em; border-bottom: 1px solid #e8eaed; padding-bottom: 6px; }
-.message-content h3 { font-size: 1.15em; }
-.message-content h4 { font-size: 1em; }
+.message-content h1 {
+    font-size: 1.5em;
+    border-bottom: 1px solid #e8eaed;
+    padding-bottom: 8px;
+}
+
+.message-content h2 {
+    font-size: 1.3em;
+    border-bottom: 1px solid #e8eaed;
+    padding-bottom: 6px;
+}
+
+.message-content h3 {
+    font-size: 1.15em;
+}
+
+.message-content h4 {
+    font-size: 1em;
+}
 
 .message-content p {
     margin-top: 0;
     margin-bottom: 10px;
 }
 
-.message-content ul, .message-content ol {
+.message-content ul,
+.message-content ol {
     margin-top: 0;
     margin-bottom: 10px;
     padding-left: 24px;
@@ -499,7 +544,8 @@ body {
     margin: 10px 0;
 }
 
-.message-content th, .message-content td {
+.message-content th,
+.message-content td {
     border: 1px solid #e8eaed;
     padding: 8px 12px;
     text-align: left;
@@ -564,8 +610,16 @@ body {
 }
 
 @keyframes blink {
-    0%, 50% { opacity: 1; }
-    51%, 100% { opacity: 0; }
+
+    0%,
+    50% {
+        opacity: 1;
+    }
+
+    51%,
+    100% {
+        opacity: 0;
+    }
 }
 
 /* 加载消息样式 */
@@ -585,6 +639,7 @@ body {
     from {
         transform: rotate(0deg);
     }
+
     to {
         transform: rotate(360deg);
     }
@@ -612,7 +667,8 @@ body {
     gap: 8px;
 }
 
-.tools-btn, .file-btn {
+.tools-btn,
+.file-btn {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -627,12 +683,14 @@ body {
     height: 36px;
 }
 
-.tools-btn:hover, .file-btn:hover {
+.tools-btn:hover,
+.file-btn:hover {
     color: #202124;
     background: #f1f3f4;
 }
 
-.tools-icon, .file-icon {
+.tools-icon,
+.file-icon {
     width: 20px;
     height: 20px;
     color: currentColor;
@@ -907,6 +965,7 @@ body {
         transform: translateX(100%);
         opacity: 0;
     }
+
     to {
         transform: translateX(0);
         opacity: 1;
@@ -918,6 +977,7 @@ body {
         transform: translateX(0);
         opacity: 1;
     }
+
     to {
         transform: translateX(100%);
         opacity: 0;
@@ -926,8 +986,15 @@ body {
 
 /* 加载动画 */
 @keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.5; }
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.5;
+    }
 }
 
 .loading {
@@ -978,7 +1045,9 @@ body {
 }
 
 @keyframes spin {
-    to { transform: rotate(360deg); }
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 /* 智能运维消息样式 */
@@ -1103,6 +1172,7 @@ body {
         opacity: 0;
         transform: scale(0.9);
     }
+
     to {
         opacity: 1;
         transform: scale(1);
@@ -1136,28 +1206,28 @@ body {
     .sidebar {
         width: 240px;
     }
-    
+
     .message-content {
         max-width: 90%;
         font-size: 0.9rem;
     }
-    
+
     .input-wrapper {
         flex-wrap: wrap;
     }
-    
+
     .mode-selector-wrapper {
         order: -1;
         width: 100%;
         margin-left: 0;
         margin-bottom: 8px;
     }
-    
+
     .mode-selector-btn {
         width: 100%;
         justify-content: space-between;
     }
-    
+
     .mode-dropdown {
         width: 100%;
         right: 0;

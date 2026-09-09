@@ -1,6 +1,6 @@
 """硬路由处理器 - 不同意图走不同的处理管道"""
 
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, AsyncGenerator
 from loguru import logger
 from datetime import datetime
 
@@ -28,6 +28,7 @@ class RouteHandlers:
             model=config.rag_model,
             api_key=config.dashscope_api_key,
             temperature=0.7,
+            streaming=True,
         )
         self.prompt_template = ChatPromptTemplate
 
@@ -44,7 +45,6 @@ class RouteHandlers:
                 threshold=config.memory_importance_threshold if hasattr(config, 'memory_importance_threshold') else 0.7
             )
             self.short_term_cache: Dict[str, ShortTermMemory] = {}
-            # 用于存储待处理的摘要（异步回调中设置）
             self._pending_summary: Dict[str, str] = {}
             logger.info("记忆系统已启用")
         else:
@@ -59,7 +59,6 @@ class RouteHandlers:
     # 短期记忆辅助方法
     # ============================================================
     def _get_or_create_short_term(self, user_id: str) -> Optional[ShortTermMemory]:
-        """获取或创建用户的短期记忆窗口"""
         if not self.enable_memory:
             return None
 
@@ -72,7 +71,6 @@ class RouteHandlers:
         return self.short_term_cache[user_id]
 
     def _on_window_overflow(self, user_id: str, old_messages: List[Dict[str, Any]]) -> None:
-        """窗口满时的回调：触发摘要压缩"""
         if not self.enable_memory:
             return
         import asyncio
@@ -83,37 +81,29 @@ class RouteHandlers:
             asyncio.create_task(self._async_summarize(user_id, old_messages))
 
     async def _async_summarize(self, user_id: str, old_messages: List[Dict[str, Any]]) -> None:
-        """异步摘要压缩，并把摘要放回窗口"""
         if not self.enable_memory or self.summarizer is None:
             return
         
-        # 消息太少，不值得压缩
         min_messages = 4
         if len(old_messages) < min_messages:
             return
             
         try:
-            # 取最旧的消息进行压缩（排除最后一条，因为可能刚添加）
             messages_to_summarize = old_messages[:-1] if len(old_messages) > 1 else old_messages
-            
             if len(messages_to_summarize) < min_messages:
                 return
                 
             summary = await self.summarizer.summarize(messages_to_summarize)
             if summary:
                 logger.info(f"[摘要压缩] 完成: {summary[:50]}...")
-                
-                # 把摘要放回短期记忆窗口
                 short_term = self._get_or_create_short_term(user_id)
                 if short_term:
                     short_term.add("system", f"历史摘要：{summary}")
                     logger.debug(f"[摘要压缩] 摘要已放入窗口，当前窗口大小: {short_term.size()}")
-                
         except Exception as e:
             logger.error(f"摘要压缩失败: {e}")
 
     def _format_short_term_context(self, user_id: str, max_messages: int = 6) -> str:
-        """从短期记忆窗口获取格式化的上下文"""
         if not self.enable_memory or not user_id:
             return ""
         
@@ -122,16 +112,10 @@ class RouteHandlers:
             return ""
         
         context_messages = short_term.get_context()
-        logger.info(f"[短期记忆] 获取到 {len(context_messages)} 条消息: {context_messages}")
-        
         if not context_messages:
-            logger.warning("[短期记忆] 窗口为空！")
             return ""
         
-        # 只取最近的 max_messages 条
         recent_messages = context_messages[-max_messages:]
-        
-        # 格式化
         formatted = []
         for msg in recent_messages:
             role = msg.get('role', 'unknown')
@@ -141,42 +125,28 @@ class RouteHandlers:
             else:
                 formatted.append(f"[{role}]: {content}")
         
-        result = "\n".join(formatted)
-        logger.info(f"[短期记忆] 格式化后的上下文: {result[:200]}...")
-        return result
+        return "\n".join(formatted)
 
-    # ========== 对外暴露的短期记忆记录方法（由 rag_agent_service 调用） ==========
     def _record_user_question(self, user_id: str, question: str) -> None:
-        """只记录用户问题到短期记忆"""
         if not self.enable_memory or not user_id:
             return
         short_term = self._get_or_create_short_term(user_id)
         if short_term is None:
             return
         short_term.add("user", question)
-        logger.debug(f"[短期记忆] 记录用户问题，当前窗口大小: {short_term.size()}")
 
     def _record_assistant_answer(self, user_id: str, answer: str) -> None:
-        """只记录助手回答到短期记忆"""
         if not self.enable_memory or not user_id:
             return
         short_term = self._get_or_create_short_term(user_id)
         if short_term is None:
             return
         short_term.add("assistant", answer)
-        logger.debug(f"[短期记忆] 记录助手回答，当前窗口大小: {short_term.size()}")
-
-    # 保留组合方法（供外部一次性记录，但内部不再使用）
-    def _record_conversation(self, user_id: str, question: str, answer: str) -> None:
-        """完整记录一轮对话（组合调用）"""
-        self._record_user_question(user_id, question)
-        self._record_assistant_answer(user_id, answer)
 
     # ============================================================
     # 长期记忆辅助方法
     # ============================================================
     async def _query_memory_context(self, question: str, user_id: str) -> str:
-        """查询长期记忆并返回格式化的上下文"""
         if not self.enable_memory or self.long_term is None:
             return ""
 
@@ -202,16 +172,11 @@ class RouteHandlers:
         user_id: str,
         metadata: Optional[Dict[str, Any]] = None,
     ) -> None:
-        """判断问题或答案是否重要，若重要则存入长期记忆"""
         if not self.enable_memory or self.importance_scorer is None or self.long_term is None:
-            logger.debug("[记忆] 记忆未启用或组件未初始化")
             return
 
         try:
-            # ====== 检查问题是否重要 ======
             importance_result = await self.importance_scorer.score(question)
-            logger.info(f"[记忆] 问题重要性分数: {importance_result.score:.2f}, 阈值: {self.importance_scorer.threshold}")
-            
             if importance_result.score >= self.importance_scorer.threshold:
                 for fact in importance_result.facts:
                     await self.long_term.add_fact(
@@ -224,10 +189,7 @@ class RouteHandlers:
                         }
                     )
                 logger.info(f"[记忆] ✅ 存入重要问题: {question[:30]}... (分数: {importance_result.score:.2f})")
-            else:
-                logger.debug(f"[记忆] ⏭️ 跳过存入问题（分数 {importance_result.score:.2f} < 阈值 {self.importance_scorer.threshold}）")
 
-            # ====== 检查答案是否重要 ======
             answer_importance = await self.importance_scorer.score(answer)
             if answer_importance.score >= self.importance_scorer.threshold:
                 for fact in answer_importance.facts:
@@ -241,7 +203,6 @@ class RouteHandlers:
                         }
                     )
                 logger.info(f"[记忆] ✅ 存入重要答案片段: {answer[:30]}... (分数: {answer_importance.score:.2f})")
-
         except Exception as e:
             logger.warning(f"[记忆] 存入失败: {e}")
 
@@ -277,23 +238,29 @@ class RouteHandlers:
             return None
 
     # ============================================================
-    # 1. 闲聊处理器
+    # 流式处理器（含 intent/tool_call 事件发送）
     # ============================================================
-    async def handle_chat(self, question: str, user_id: Optional[str] = None) -> str:
-        logger.info(f"[闲聊直出] {question[:30]}...")
 
+    # ---------- 1. 流式闲聊 ----------
+    async def handle_chat_stream(self, question: str, user_id: Optional[str] = None) -> AsyncGenerator[Dict[str, Any], None]:
+        logger.info(f"[闲聊流式] {question[:30]}...")
+        
+        # 发送意图事件
+        yield {
+            "type": "intent",
+            "data": {
+                "intent": "chat",
+                "confidence": 0.90
+            }
+        }
+        
         from langchain_core.prompts import ChatPromptTemplate
 
-        # ========== 获取短期记忆上下文 ==========
         short_term_context = self._format_short_term_context(user_id) if user_id else ""
-        logger.info(f"[短期记忆] 闲聊场景 - 上下文: {short_term_context[:100] if short_term_context else '(空)'}")
-
-        # ========== 查询长期记忆 ==========
         memory_context = ""
         if user_id:
             memory_context = await self._query_memory_context(question, user_id)
 
-        # ========== 构建 Prompt ==========
         if memory_context:
             prompt_template = """
 你是一个友好、专业的运维助手。
@@ -334,38 +301,42 @@ class RouteHandlers:
 
         prompt = ChatPromptTemplate.from_template(prompt_template)
         chain = prompt | self.llm
-        response = await chain.ainvoke({
+
+        async for chunk in chain.astream({
             "short_term_context": short_term_context or "无",
             "memory_context": memory_context or "无相关历史记录",
             "question": question
-        })
+        }):
+            if isinstance(chunk, str):
+                if chunk.strip():
+                    yield {"type": "content", "data": chunk}
+            elif hasattr(chunk, "content"):
+                if chunk.content:
+                    yield {"type": "content", "data": chunk.content}
 
-        # 注意：不再在此处记录短期记忆，由上层 rag_agent_service 统一记录
-        return response.content
-
-    # ============================================================
-    # 2. 知识查询处理器（支持记忆读写）
-    # ============================================================
-    async def handle_knowledge(self, question: str, user_id: Optional[str] = None, top_k: int = 3) -> str:
-        """知识查询走快速 RAG 链路 + 记忆读写"""
-        logger.info(f"[知识快速RAG] {question[:30]}...")
-
+    # ---------- 2. 流式知识查询 ----------
+    async def handle_knowledge_stream(self, question: str, user_id: Optional[str] = None, top_k: int = 3) -> AsyncGenerator[Dict[str, Any], None]:
+        logger.info(f"[知识流式] {question[:30]}...")
+        
+        # 发送意图事件
+        yield {
+            "type": "intent",
+            "data": {
+                "intent": "knowledge",
+                "confidence": 0.90
+            }
+        }
+        
         from langchain_core.prompts import ChatPromptTemplate
 
-        # ========== 获取短期记忆上下文 ==========
         short_term_context = self._format_short_term_context(user_id) if user_id else ""
-        logger.info(f"[短期记忆] 知识查询场景 - 上下文: {short_term_context[:100] if short_term_context else '(空)'}")
-
-        # ========== 查询长期记忆 ==========
         memory_context = ""
         if user_id:
             memory_context = await self._query_memory_context(question, user_id)
 
-        # ========== RAG 检索 ==========
         docs = hybrid_retriever.retrieve(question, top_k=top_k)
 
         if not docs:
-            # 如果没有检索到文档，但可能有记忆内容
             if memory_context:
                 prompt = ChatPromptTemplate.from_template("""
 你是一个专业的运维知识助手。
@@ -382,21 +353,20 @@ class RouteHandlers:
 请基于用户的历史记录回答，如果历史记录不足以回答，请明确说明。
 """)
                 chain = prompt | self.llm
-                response = await chain.ainvoke({
+                async for chunk in chain.astream({
                     "short_term_context": short_term_context or "无",
                     "memory_context": memory_context,
                     "question": question
-                })
-                # 注意：不再在此处记录短期记忆，由上层统一记录
-                # 尝试将回答存入长期记忆
-                if user_id:
-                    await self._add_to_memory_if_important(question, response.content, user_id, {"type": "knowledge"})
-                return response.content
-            else:
-                logger.warning(f"[知识快速RAG] 未检索到相关文档且无记忆")
-                return "未检索到相关知识，请尝试换一种问法或联系技术支持。"
+                }):
+                    if isinstance(chunk, str) and chunk.strip():
+                        yield {"type": "content", "data": chunk}
+                    elif hasattr(chunk, "content") and chunk.content:
+                        yield {"type": "content", "data": chunk.content}
+                return
 
-        # 构建上下文
+            yield {"type": "content", "data": "未检索到相关知识，请尝试换一种问法或联系技术支持。"}
+            return
+
         context_parts = []
         for idx, doc in enumerate(docs, 1):
             source = doc.metadata.get("_source", "未知来源")
@@ -404,7 +374,6 @@ class RouteHandlers:
             context_parts.append(f"【文档{idx}】（来源：{source}）\n{content}")
         rag_context = "\n\n".join(context_parts)
 
-        # ========== 构建 Prompt ==========
         if memory_context:
             prompt_template = """
 你是一个专业的运维知识助手。请基于以下参考资料和用户的历史记录回答用户的问题。
@@ -450,55 +419,79 @@ class RouteHandlers:
 
         prompt = ChatPromptTemplate.from_template(prompt_template)
         chain = prompt | self.llm
-        response = await chain.ainvoke({
+
+        async for chunk in chain.astream({
             "short_term_context": short_term_context or "无",
             "memory_context": memory_context or "无相关历史记录",
             "context": rag_context,
             "question": question
-        })
+        }):
+            if isinstance(chunk, str):
+                if chunk.strip():
+                    yield {"type": "content", "data": chunk}
+            elif hasattr(chunk, "content"):
+                if chunk.content:
+                    yield {"type": "content", "data": chunk.content}
 
-        # 不再在此处记录短期记忆，由上层统一记录
-        # 存入长期记忆
-        if user_id:
-            await self._add_to_memory_if_important(question, response.content, user_id, {"type": "knowledge"})
-
-        logger.info(f"[知识快速RAG] 完成，检索到 {len(docs)} 篇文档")
-        return response.content
-
-    # ============================================================
-    # 3. 故障排查处理器
-    # ============================================================
-    async def handle_troubleshoot(self, question: str, user_id: str) -> str:
-        logger.info(f"[故障排查] {question[:30]}...")
-
+    # ---------- 3. 流式故障排查 ----------
+    async def handle_troubleshoot_stream(self, question: str, user_id: str) -> AsyncGenerator[Dict[str, Any], None]:
+        logger.info(f"[故障排查流式] {question[:30]}...")
+        
+        # 发送意图事件
+        yield {
+            "type": "intent",
+            "data": {
+                "intent": "troubleshoot",
+                "confidence": 0.85
+            }
+        }
+        
         from langchain_core.prompts import ChatPromptTemplate
 
-        # ========== 获取短期记忆上下文 ==========
         short_term_context = self._format_short_term_context(user_id) if user_id else ""
-        logger.info(f"[短期记忆] 故障排查场景 - 上下文: {short_term_context[:100] if short_term_context else '(空)'}")
-
-        # ========== 查询长期记忆 ==========
         memory_context = await self._query_memory_context(question, user_id)
 
-        # ========== 提取服务名 ==========
         service_name = self._extract_service_name(question)
-        logger.info(f"[故障排查] 提取服务名: {service_name}")
+        logger.info(f"[故障排查流式] 提取服务名: {service_name}")
 
-        # ========== 调用日志工具 ==========
+        # ---------- 日志工具 ----------
         log_context = ""
         try:
+            # 搜索日志主题
+            yield {
+                "type": "tool_call",
+                "data": {
+                    "tool": "search_topic_by_service_name",
+                    "status": "start"
+                }
+            }
             topic_result = await self._call_mcp_tool(
                 "search_topic_by_service_name",
                 {"service_name": service_name, "fuzzy": True}
             )
+            yield {
+                "type": "tool_call",
+                "data": {
+                    "tool": "search_topic_by_service_name",
+                    "status": "end"
+                }
+            }
+            
             topic_id = None
             if topic_result and isinstance(topic_result, dict):
                 topics = topic_result.get("topics", [])
                 if topics:
                     topic_id = topics[0].get("topic_id")
-                    logger.info(f"[故障排查] 找到 topic: {topic_id}")
 
             if topic_id:
+                # 查询日志
+                yield {
+                    "type": "tool_call",
+                    "data": {
+                        "tool": "search_log",
+                        "status": "start"
+                    }
+                }
                 timestamp_result = await self._call_mcp_tool("get_current_timestamp", {})
                 if timestamp_result:
                     current_ts = int(timestamp_result) if isinstance(timestamp_result, int) else int(timestamp_result)
@@ -512,28 +505,46 @@ class RouteHandlers:
                             "limit": 50
                         }
                     )
-                    if log_result and isinstance(log_result, dict):
-                        logs = log_result.get("logs", [])
-                        if logs:
-                            log_context = "查询到以下日志记录：\n"
-                            for log in logs[:10]:
-                                log_context += f"- {log.get('timestamp', '')} [{log.get('level', 'INFO')}] {log.get('message', '')}\n"
-                            logger.info(f"[故障排查] 获取到 {len(logs)} 条日志")
-                        else:
-                            log_context = "未查询到相关日志"
-                    else:
-                        log_context = f"未找到服务 '{service_name}' 对应的日志主题"
+                yield {
+                    "type": "tool_call",
+                    "data": {
+                        "tool": "search_log",
+                        "status": "end"
+                    }
+                }
+                
+                if log_result and isinstance(log_result, dict):
+                    logs = log_result.get("logs", [])
+                    if logs:
+                        log_context = "查询到以下日志记录：\n"
+                        for log in logs[:10]:
+                            log_context += f"- {log.get('timestamp', '')} [{log.get('level', 'INFO')}] {log.get('message', '')}\n"
         except Exception as e:
             logger.warning(f"[故障排查] CLS 日志查询失败: {e}")
             log_context = f"日志查询失败: {str(e)}"
 
-        # ========== 调用监控工具 ==========
+        # ---------- 监控工具 ----------
         monitor_context = ""
         try:
+            # CPU
+            yield {
+                "type": "tool_call",
+                "data": {
+                    "tool": "query_cpu_metrics",
+                    "status": "start"
+                }
+            }
             cpu_result = await self._call_mcp_tool(
                 "query_cpu_metrics",
                 {"service_name": service_name, "interval": "1m"}
             )
+            yield {
+                "type": "tool_call",
+                "data": {
+                    "tool": "query_cpu_metrics",
+                    "status": "end"
+                }
+            }
             if cpu_result and isinstance(cpu_result, dict):
                 stats = cpu_result.get("statistics", {})
                 alert = cpu_result.get("alert_info", {})
@@ -542,10 +553,25 @@ class RouteHandlers:
                 monitor_context += f"  - 最大值: {stats.get('max', 'N/A')}%\n"
                 monitor_context += f"  - 告警状态: {alert.get('message', '正常')}\n"
 
+            # Memory
+            yield {
+                "type": "tool_call",
+                "data": {
+                    "tool": "query_memory_metrics",
+                    "status": "start"
+                }
+            }
             memory_result = await self._call_mcp_tool(
                 "query_memory_metrics",
                 {"service_name": service_name, "interval": "1m"}
             )
+            yield {
+                "type": "tool_call",
+                "data": {
+                    "tool": "query_memory_metrics",
+                    "status": "end"
+                }
+            }
             if memory_result and isinstance(memory_result, dict):
                 stats = memory_result.get("statistics", {})
                 alert = memory_result.get("alert_info", {})
@@ -557,11 +583,11 @@ class RouteHandlers:
             logger.warning(f"[故障排查] 监控查询失败: {e}")
             monitor_context = f"监控数据查询失败: {str(e)}"
 
-        # ========== RAG 检索 ==========
+        # RAG
         docs = hybrid_retriever.retrieve(question, top_k=3)
         doc_context = "\n\n".join([doc.page_content for doc in docs]) if docs else "未找到相关技术文档"
 
-        # ========== LLM 综合回答 ==========
+        # 流式生成
         prompt = ChatPromptTemplate.from_template("""
 你是一个经验丰富的运维专家。请基于以下信息进行故障排查和诊断。
 
@@ -584,60 +610,51 @@ class RouteHandlers:
 {question}
 
 请按以下结构回答：
-1. **问题分析**：根据日志和监控信息，判断可能的故障原因
-2. **排查步骤**：给出具体的排查命令和检查点
-3. **解决方案**：提供可操作的修复步骤
-4. **预防措施**：如何避免再次发生
-
-如果某些信息缺失，请基于已有信息给出最佳判断，并说明假设条件。
+1. **问题分析**
+2. **排查步骤**
+3. **解决方案**
+4. **预防措施**
 """)
 
         chain = prompt | self.llm
-        response = await chain.ainvoke({
+        async for chunk in chain.astream({
             "short_term_context": short_term_context or "无",
             "memory_context": memory_context or "无相关历史记录",
             "log_context": log_context,
             "monitor_context": monitor_context,
             "doc_context": doc_context,
             "question": question
-        })
+        }):
+            if isinstance(chunk, str):
+                if chunk.strip():
+                    yield {"type": "content", "data": chunk}
+            elif hasattr(chunk, "content"):
+                if chunk.content:
+                    yield {"type": "content", "data": chunk.content}
 
-        # 不再在此处记录短期记忆，由上层统一记录
-        # 存入长期记忆
-        await self._add_to_memory_if_important(question, response.content, user_id, {"type": "troubleshoot"})
-
-        logger.info(f"[故障排查] 完成")
-        return response.content
-
-    def _extract_service_name(self, question: str) -> str:
-        service_keywords = [
-            "nginx", "redis", "mysql", "kafka", "elasticsearch",
-            "data-sync", "api-gateway", "monitor", "cls"
-        ]
-        question_lower = question.lower()
-        for keyword in service_keywords:
-            if keyword in question_lower:
-                return keyword
-        return "data-sync-service"
-
-    # ============================================================
-    # 4. 系统控制器
-    # ============================================================
-    async def handle_control(self, question: str, user_id: str) -> str:
-        logger.info(f"[系统控制] {question[:30]}...")
-
+    # ---------- 4. 流式系统控制 ----------
+    async def handle_control_stream(self, question: str, user_id: str) -> AsyncGenerator[Dict[str, Any], None]:
+        logger.info(f"[控制流式] {question[:30]}...")
+        
+        # 发送意图事件
+        yield {
+            "type": "intent",
+            "data": {
+                "intent": "control",
+                "confidence": 0.85
+            }
+        }
+        
         from langchain_core.prompts import ChatPromptTemplate
 
-        # ========== 获取短期记忆上下文 ==========
         short_term_context = self._format_short_term_context(user_id) if user_id else ""
-
-        # ========== 查询长期记忆 ==========
         memory_context = await self._query_memory_context(question, user_id)
 
         try:
             result = await self._call_mcp_tool("execute_control", {"query": question})
             if result:
-                return f"操作已执行：\n{result}"
+                yield {"type": "content", "data": f"操作已执行：\n{result}"}
+                return
         except Exception as e:
             logger.warning(f"[系统控制] 控制工具不可用，进入模拟模式: {e}")
 
@@ -664,27 +681,62 @@ class RouteHandlers:
 """)
 
         chain = prompt | self.llm
-        response = await chain.ainvoke({
+        async for chunk in chain.astream({
             "short_term_context": short_term_context or "无",
             "memory_context": memory_context or "无相关历史记录",
             "question": question
-        })
-
-        # 不再在此处记录短期记忆，由上层统一记录
-        # 存入长期记忆
-        await self._add_to_memory_if_important(question, response.content, user_id, {"type": "control"})
-
-        logger.info(f"[系统控制] 模拟执行完成")
-        return response.content
+        }):
+            if isinstance(chunk, str):
+                if chunk.strip():
+                    yield {"type": "content", "data": chunk}
+            elif hasattr(chunk, "content"):
+                if chunk.content:
+                    yield {"type": "content", "data": chunk.content}
 
     # ============================================================
-    # 5. 兜底处理器
+    # 非流式处理器（保留兼容，内部调用流式方法）
     # ============================================================
-    async def handle_unknown(self, question: str, user_id: Optional[str] = None) -> str:
-        """未知意图走知识查询作为兜底，并尝试记忆写入"""
-        logger.info(f"[兜底] {question[:30]}...")
-        result = await self.handle_knowledge(question, user_id)
+    async def handle_chat(self, question: str, user_id: Optional[str] = None) -> str:
+        result = ""
+        async for chunk in self.handle_chat_stream(question, user_id):
+            if chunk.get("type") == "content":
+                result += chunk.get("data", "")
         return result
+
+    async def handle_knowledge(self, question: str, user_id: Optional[str] = None, top_k: int = 3) -> str:
+        result = ""
+        async for chunk in self.handle_knowledge_stream(question, user_id, top_k):
+            if chunk.get("type") == "content":
+                result += chunk.get("data", "")
+        return result
+
+    async def handle_troubleshoot(self, question: str, user_id: str) -> str:
+        result = ""
+        async for chunk in self.handle_troubleshoot_stream(question, user_id):
+            if chunk.get("type") == "content":
+                result += chunk.get("data", "")
+        return result
+
+    async def handle_control(self, question: str, user_id: str) -> str:
+        result = ""
+        async for chunk in self.handle_control_stream(question, user_id):
+            if chunk.get("type") == "content":
+                result += chunk.get("data", "")
+        return result
+
+    async def handle_unknown(self, question: str, user_id: Optional[str] = None) -> str:
+        return await self.handle_knowledge(question, user_id)
+
+    def _extract_service_name(self, question: str) -> str:
+        service_keywords = [
+            "nginx", "redis", "mysql", "kafka", "elasticsearch",
+            "data-sync", "api-gateway", "monitor", "cls"
+        ]
+        question_lower = question.lower()
+        for keyword in service_keywords:
+            if keyword in question_lower:
+                return keyword
+        return "data-sync-service"
 
 
 # 全局单例

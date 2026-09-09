@@ -113,6 +113,15 @@ async def chat_stream(request: ChatRequest):
                             "message_type": chunk.get("message_type", "unknown")
                         }, ensure_ascii=False)
                     }
+                elif chunk_type == "intent":
+                    # 发送意图识别事件（前端据此显示"正在排查故障..."等状态）
+                    yield {
+                        "event": "message",
+                        "data": json.dumps({
+                            "type": "intent",
+                            "data": chunk_data
+                        }, ensure_ascii=False)
+                    }
                 elif chunk_type == "tool_call":
                     # 发送工具调用事件（可选，前端可以显示工具调用状态）
                     yield {
